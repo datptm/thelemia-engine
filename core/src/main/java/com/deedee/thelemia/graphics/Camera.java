@@ -12,7 +12,7 @@ public class Camera extends GameObject {
     private final Viewport viewport;
 
     public Camera(int width, int height) {
-        camera = new OrthographicCamera(width, height);
+        camera = new OrthographicCamera();
         camera.setToOrtho(false, width, height);
         viewport = new ScreenViewport(camera);
         viewport.update(width, height, true);

@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import com.badlogic.gdx.maps.tiled.renderers.BatchTiledMapRenderer;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -19,25 +20,30 @@ import java.util.List;
 
 public class Renderer extends GameSystem {
     private final RenderListener listener = new RenderListener(this);
-    private final Color defaultBackground;
+    private final RenderConfig config;
 
     private final Stage stage;
     private final Table root = new Table();
 
     private final Camera camera;
+    private final Camera uiCamera;
+
     private final SpriteBatch batch = new SpriteBatch();
 
     private final ShaderManager shaderManager = new ShaderManager();
-    private OrthogonalTiledMapRenderer mapRenderer;
+    private BatchTiledMapRenderer mapRenderer;
 
     private final List<AnimatedSpriteComponent> spriteComponents = new ArrayList<>();
     private final List<ParticlesComponent> particlesComponents = new ArrayList<>();
     private Transition nextTransition;
 
-    public Renderer(Color backgroundColor) {
-        this.defaultBackground = backgroundColor;
+    public Renderer(RenderConfig config) {
+        this.config = config;
         camera = new Camera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        stage = new Stage(camera.getViewport(), batch);
+        uiCamera = new Camera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+
+        // Stage uses UI viewport, not world camera viewport
+        stage = new Stage(uiCamera.getViewport(), batch);
         subscribeListener();
 
         batch.setProjectionMatrix(camera.getProjectionMatrix());
@@ -47,9 +53,12 @@ public class Renderer extends GameSystem {
         EventBus.getInstance().post(new AssignStageEvent(stage));
     }
     public Renderer() {
-        this.defaultBackground = Color.WHITE;
+        this.config = new RenderConfig(Color.WHITE, OrthogonalTiledMapRenderer.class);
         camera = new Camera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        stage = new Stage(camera.getViewport(), batch);
+        uiCamera = new Camera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+
+        // Stage uses UI viewport, not world camera viewport
+        stage = new Stage(uiCamera.getViewport(), batch);
         subscribeListener();
 
         batch.setProjectionMatrix(camera.getProjectionMatrix());
@@ -82,7 +91,7 @@ public class Renderer extends GameSystem {
             mapRenderer.render();
         }
 
-        // Flush the sprite batch
+        // Render world objects with world camera
         batch.begin();
 
         for (AnimatedSpriteComponent spriteComponent : spriteComponents) {
@@ -106,6 +115,9 @@ public class Renderer extends GameSystem {
 
         batch.end();
 
+        uiCamera.update(delta);
+        batch.setProjectionMatrix(uiCamera.getProjectionMatrix());
+
         stage.act(delta);
         stage.draw();
     }
@@ -122,6 +134,12 @@ public class Renderer extends GameSystem {
         return listener;
     }
 
+    public void resize(int width, int height) {
+        // Resize both viewports
+        camera.resize(width, height);
+        uiCamera.resize(width, height);
+    }
+
     public void addWidget(WidgetComponent widgetComponent) {
         root.add(widgetComponent.getRenderableObject().getWidget());
     }
@@ -134,8 +152,13 @@ public class Renderer extends GameSystem {
     public void changeTileMap(TileMapComponent tileMapComponent, float unitScale) {
         if (mapRenderer != null) mapRenderer.dispose();
 
-        TileMap tileMap = tileMapComponent.getRenderableObject();
-        mapRenderer = new OrthogonalTiledMapRenderer(tileMap.getTiledMap(), unitScale, batch);
+        try {
+            TileMap tileMap = tileMapComponent.getRenderableObject();
+            mapRenderer = config.getMapRenderer(tileMap.getTiledMap(), unitScale, batch);
+        } catch (Exception e) {
+            System.out.println("Error creating map renderer: " + e);
+        }
+
     }
 
     public void drawAnimatedSprite(AnimatedSpriteComponent spriteComponent) {
@@ -173,6 +196,7 @@ public class Renderer extends GameSystem {
 
     public void clearScreen(Color color) {
         if (color == null) {
+            Color defaultBackground = config.getDefaultBackground();
             Gdx.gl.glClearColor(defaultBackground.r, defaultBackground.g, defaultBackground.b, defaultBackground.a);
         } else {
             Gdx.gl.glClearColor(color.r, color.g, color.b, color.a);
@@ -189,10 +213,13 @@ public class Renderer extends GameSystem {
     public Camera getCamera() {
         return camera;
     }
+    public Camera getUiCamera() {
+        return uiCamera;
+    }
     public SpriteBatch getBatch() {
         return batch;
     }
-    public OrthogonalTiledMapRenderer getMapRenderer() {
+    public BatchTiledMapRenderer getMapRenderer() {
         return mapRenderer;
     }
 
