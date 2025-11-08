@@ -1,12 +1,12 @@
 package com.deedee.thelemia.physics;
 
 public class TileBodyData extends BodyData {
-    private final Enum<?> layerName;
+    private final String layerName;
     private final int tileX;
     private final int tileY;
     private final boolean isSensor;
 
-    public TileBodyData(Enum<?> layerName, int tileX, int tileY, short categoryMask, short collisionMask, boolean isSensor) {
+    public TileBodyData(String layerName, int tileX, int tileY, short categoryMask, short collisionMask, boolean isSensor) {
         super(generateTileBodyName(layerName, tileX, tileY), categoryMask, collisionMask);
         this.layerName = layerName;
         this.tileX = tileX;
@@ -14,11 +14,11 @@ public class TileBodyData extends BodyData {
         this.isSensor = isSensor;
     }
 
-    private static String generateTileBodyName(Enum<?> layerName, int tileX, int tileY) {
+    private static String generateTileBodyName(String layerName, int tileX, int tileY) {
         return layerName + "_tile_" + tileX + "_" + tileY;
     }
 
-    public Enum<?> getLayerName() {
+    public String getLayerName() {
         return layerName;
     }
     public int getTileX() {

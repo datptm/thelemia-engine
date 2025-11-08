@@ -1,34 +1,18 @@
 package com.deedee.thelemia;
 
 import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.maps.tiled.renderers.IsometricTiledMapRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.scenes.scene2d.Actor;
-import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.*;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
-import com.badlogic.gdx.utils.ScreenUtils;
-import com.deedee.thelemia.core.EngineConfig;
 import com.deedee.thelemia.core.Engine;
-import com.deedee.thelemia.event.EventBus;
-import com.deedee.thelemia.event.common.RenderAnimatedSpriteEvent;
-import com.deedee.thelemia.event.common.RenderFragmentEvent;
-import com.deedee.thelemia.graphics.AnimatedSprite;
-import com.deedee.thelemia.graphics.Fragment;
+import com.deedee.thelemia.graphics.RenderConfig;
 import com.deedee.thelemia.physics.PhysicsConfig;
-import com.deedee.thelemia.scene.Entity;
-import com.deedee.thelemia.scene.Scene;
-import com.deedee.thelemia.scene.component.AnimatedSpriteComponent;
-import com.deedee.thelemia.scene.component.WidgetComponent;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class ThelemiaLauncher extends ApplicationAdapter {
-    private final EngineConfig config = new EngineConfig(new Color(0.15f, 0.15f, 0.2f, 1f), 1920, 1048, "MyThelemiaEngine", false);
+    private final RenderConfig renderConfig = new RenderConfig(new Color(0.15f, 0.15f, 0.2f, 1.0f), IsometricTiledMapRenderer.class);
     private final PhysicsConfig physicsConfig = new PhysicsConfig(new Vector2());
-    private final Engine engine = new Engine(config, physicsConfig);
+    private final Engine engine = new Engine(renderConfig, physicsConfig);
 
     @Override
     public void create() {

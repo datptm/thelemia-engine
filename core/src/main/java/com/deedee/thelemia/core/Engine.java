@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.deedee.thelemia.audio.AudioEmitter;
 import com.deedee.thelemia.event.EventBus;
+import com.deedee.thelemia.graphics.RenderConfig;
 import com.deedee.thelemia.graphics.Renderer;
 import com.deedee.thelemia.input.InputHandler;
 import com.deedee.thelemia.physics.PhysicsConfig;
@@ -16,14 +17,14 @@ import com.deedee.thelemia.time.TimerController;
 import java.util.*;
 
 public class Engine extends ApplicationAdapter {
-    private final EngineConfig config;
+    private final RenderConfig renderConfig;
     private final PhysicsConfig physicsConfig;
 
     private final Map<Class<? extends GameSystem>, GameSystem> defaultSystems = new HashMap<>();
     private final List<GameSystem> optionalSystems = new ArrayList<>();
 
-    public Engine(EngineConfig config, PhysicsConfig physicsConfig) {
-        this.config = config;
+    public Engine(RenderConfig renderConfig, PhysicsConfig physicsConfig) {
+        this.renderConfig = renderConfig;
         this.physicsConfig = physicsConfig;
     }
 
@@ -34,7 +35,7 @@ public class Engine extends ApplicationAdapter {
         defaultSystems.put(AudioEmitter.class, new AudioEmitter());
         defaultSystems.put(PhysicsEngine.class, new PhysicsEngine(physicsConfig));
         defaultSystems.put(TimerController.class, new TimerController());
-        defaultSystems.put(Renderer.class, new Renderer(config.getBackgroundColor()));
+        defaultSystems.put(Renderer.class, new Renderer(renderConfig));
     }
     @Override
     public void render() {
@@ -52,6 +53,7 @@ public class Engine extends ApplicationAdapter {
     @Override
     public void resize(int width, int height) {
         // Resize logic for the engine
+        getRenderer().resize(width, height);
     }
     @Override
     public void pause() {
@@ -80,8 +82,8 @@ public class Engine extends ApplicationAdapter {
         optionalSystems.remove(system);
     }
 
-    public EngineConfig getConfig() {
-        return config;
+    public RenderConfig getRenderConfig() {
+        return renderConfig;
     }
     public PhysicsConfig getPhysicsConfig() {
         return physicsConfig;

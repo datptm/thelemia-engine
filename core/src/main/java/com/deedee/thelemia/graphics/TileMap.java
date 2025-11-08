@@ -32,7 +32,7 @@ public class TileMap extends RenderableObject {
 
     // Physics integration
     private final Map<String, RigidBody> tileColliders = new HashMap<>();
-    private final Map<Enum<?>, LayerCollisionConfig> collisionLayers = new HashMap<>();
+    private final Map<String, LayerCollisionConfig> collisionLayers = new HashMap<>();
 
     public static final long FLIP_H = 0x80000000L;
     public static final long FLIP_V = 0x40000000L;
@@ -73,14 +73,14 @@ public class TileMap extends RenderableObject {
     /**
      * Configures collision properties for a specific layer
      */
-    public void setLayerCollisionInfo(Enum<?> layerName, short categoryMask, short collisionMask, boolean isSensor) {
+    public void setLayerCollisionInfo(String layerName, short categoryMask, short collisionMask, boolean isSensor) {
         collisionLayers.put(layerName, new LayerCollisionConfig(categoryMask, collisionMask, isSensor));
     }
 
     /**
      * Generates collision bodies for all solid tiles in a layer
      */
-    public void generateCollisionBodies(Enum<?> layerName) {
+    public void generateCollisionBodies(String layerName) {
         TiledMapTileLayer layer = getTileLayer(layerName);
         if (layer == null) return;
 
@@ -106,7 +106,7 @@ public class TileMap extends RenderableObject {
     /**
      * Creates a collision body for a single tile
      */
-    public void createTileCollisionBody(Enum<?> layerName, int tileX, int tileY, LayerCollisionConfig collisionConfig) {
+    public void createTileCollisionBody(String layerName, int tileX, int tileY, LayerCollisionConfig collisionConfig) {
         String bodyName = getTileBodyName(layerName, tileX, tileY);
 
         // Remove existing body if it exists
@@ -152,7 +152,7 @@ public class TileMap extends RenderableObject {
     /**
      * Destroys a collision body for a specific tile
      */
-    public void destroyTileCollisionBody(Enum<?> layerName, int tileX, int tileY) {
+    public void destroyTileCollisionBody(String layerName, int tileX, int tileY) {
         String bodyName = getTileBodyName(layerName, tileX, tileY);
         RigidBody body = tileColliders.get(bodyName);
         if (body != null) {
@@ -164,7 +164,7 @@ public class TileMap extends RenderableObject {
     /**
      * Clears all collision bodies for a specific layer
      */
-    public void clearLayerCollisionBodies(Enum<?> layerName) {
+    public void clearLayerCollisionBodies(String layerName) {
         List<String> bodiesToRemove = new ArrayList<>();
         String layerPrefix = layerName + "_tile_";
 
@@ -180,7 +180,7 @@ public class TileMap extends RenderableObject {
     /**
      * Gets the collision body for a specific tile
      */
-    public RigidBody getTileCollisionBody(Enum<?> layerName, int tileX, int tileY) {
+    public RigidBody getTileCollisionBody(String layerName, int tileX, int tileY) {
         String bodyName = getTileBodyName(layerName, tileX, tileY);
         return tileColliders.get(bodyName);
     }
@@ -188,14 +188,14 @@ public class TileMap extends RenderableObject {
     /**
      * Checks if a tile has a collision body
      */
-    public boolean hasTileCollisionBody(Enum<?> layerName, int tileX, int tileY) {
+    public boolean hasTileCollisionBody(String layerName, int tileX, int tileY) {
         return getTileCollisionBody(layerName, tileX, tileY) != null;
     }
 
     /**
      * Gets the TileBodyData for a specific tile collision body
      */
-    public TileBodyData getTileBodyData(Enum<?> layerName, int tileX, int tileY) {
+    public TileBodyData getTileBodyData(String layerName, int tileX, int tileY) {
         RigidBody rigidBody = getTileCollisionBody(layerName, tileX, tileY);
         if (rigidBody != null && TileBodyData.isTileBody(rigidBody.getData())) {
             return TileBodyData.asTileBodyData(rigidBody.getData());
@@ -206,7 +206,7 @@ public class TileMap extends RenderableObject {
     /**
      * Gets all tile bodies for a specific layer
      */
-    public List<RigidBody> getLayerTileColliders(Enum<?> layerName) {
+    public List<RigidBody> getLayerTileColliders(String layerName) {
         List<RigidBody> layerBodies = new ArrayList<>();
         String layerPrefix = layerName + "_tile_";
 
@@ -219,7 +219,7 @@ public class TileMap extends RenderableObject {
         return layerBodies;
     }
 
-    private String getTileBodyName(Enum<?> layerName, int tileX, int tileY) {
+    private String getTileBodyName(String layerName, int tileX, int tileY) {
         return layerName + "_tile_" + tileX + "_" + tileY;
     }
 
@@ -240,8 +240,8 @@ public class TileMap extends RenderableObject {
         if (tiledMap != null) tiledMap.dispose();
     }
 
-    public TiledMapTileLayer getTileLayer(Enum<?> layerName) {
-        MapLayer layer = tiledMap.getLayers().get(layerName.name());
+    public TiledMapTileLayer getTileLayer(String layerName) {
+        MapLayer layer = tiledMap.getLayers().get(layerName);
         if (layer instanceof TiledMapTileLayer) {
             return (TiledMapTileLayer) layer;
         }
@@ -251,10 +251,13 @@ public class TileMap extends RenderableObject {
     /**
      * Sets a tile identified by layerName and coordinates
      */
-    public void setTile(Enum<?> layerName, int tx, int ty, TiledMapTile tile) {
+    public void setTile(String layerName, int tx, int ty, int id) {
         TiledMapTileLayer layer = getTileLayer(layerName);
         if (layer == null) return;
         if (tx < 0 || ty < 0 || tx >= layer.getWidth() || ty >= layer.getHeight()) return;
+
+        int startId = layer.getProperties().get("firstgid", Integer.class);
+        TiledMapTile tile = tiledMap.getTileSets().getTileSet(layerName).getTile(startId + id);
 
         Cell cell = layer.getCell(tx, ty);
         if (cell == null) {
@@ -276,7 +279,7 @@ public class TileMap extends RenderableObject {
     /**
      * Clears a tile identified by layerName and coordinates
      */
-    public void clearTile(Enum<?> layerName, int tx, int ty) {
+    public void clearTile(String layerName, int tx, int ty) {
         TiledMapTileLayer layer = getTileLayer(layerName);
         if (layer == null) return;
         if (tx < 0 || ty < 0 || tx >= layer.getWidth() || ty >= layer.getHeight()) return;
@@ -307,7 +310,7 @@ public class TileMap extends RenderableObject {
      * @param flipVertically Whether to flip vertically
      * @param flipDiagonally Whether to flip diagonally
      */
-    public void setTileFlip(Enum<?> layerName, int tx, int ty, boolean flipHorizontally, boolean flipVertically, boolean flipDiagonally) {
+    public void setTileFlip(String layerName, int tx, int ty, boolean flipHorizontally, boolean flipVertically, boolean flipDiagonally) {
         TiledMapTileLayer layer = getTileLayer(layerName);
         if (layer == null) return;
         if (tx < 0 || ty < 0 || tx >= layer.getWidth() || ty >= layer.getHeight()) return;
@@ -327,7 +330,7 @@ public class TileMap extends RenderableObject {
      * @param ty Tile y coordinate
      * @param flipMask Bitmask containing flip flags (FLIP_H, FLIP_V, FLIP_D)
      */
-    public void setTileFlipMask(Enum<?> layerName, int tx, int ty, long flipMask) {
+    public void setTileFlipMask(String layerName, int tx, int ty, long flipMask) {
         boolean flipH = (flipMask & FLIP_H) != 0;
         boolean flipV = (flipMask & FLIP_V) != 0;
         boolean flipD = (flipMask & FLIP_D) != 0;
@@ -341,7 +344,7 @@ public class TileMap extends RenderableObject {
      * @param ty Tile y coordinate
      * @return Bitmask containing current flip flags, or 0 if tile doesn't exist
      */
-    public long getTileFlipMask(Enum<?> layerName, int tx, int ty) {
+    public long getTileFlipMask(String layerName, int tx, int ty) {
         TiledMapTileLayer layer = getTileLayer(layerName);
         if (layer == null) return 0;
         if (tx < 0 || ty < 0 || tx >= layer.getWidth() || ty >= layer.getHeight()) return 0;
@@ -367,7 +370,7 @@ public class TileMap extends RenderableObject {
      * @param flipVertically Whether to flip vertically
      * @param flipDiagonally Whether to flip diagonally
      */
-    public void setTileWithFlip(Enum<?> layerName, int tx, int ty, TiledMapTile tile, boolean flipHorizontally, boolean flipVertically, boolean flipDiagonally) {
+    public void setTileWithFlip(String layerName, int tx, int ty, TiledMapTile tile, boolean flipHorizontally, boolean flipVertically, boolean flipDiagonally) {
         TiledMapTileLayer layer = getTileLayer(layerName);
         if (layer == null) return;
         if (tx < 0 || ty < 0 || tx >= layer.getWidth() || ty >= layer.getHeight()) return;
@@ -402,7 +405,7 @@ public class TileMap extends RenderableObject {
      * @param tile The tile to set
      * @param flipMask Bitmask containing flip flags (FLIP_H, FLIP_V, FLIP_D)
      */
-    public void setTileWithFlipMask(Enum<?> layerName, int tx, int ty, TiledMapTile tile, long flipMask) {
+    public void setTileWithFlipMask(String layerName, int tx, int ty, TiledMapTile tile, long flipMask) {
         boolean flipH = (flipMask & FLIP_H) != 0;
         boolean flipV = (flipMask & FLIP_V) != 0;
         boolean flipD = (flipMask & FLIP_D) != 0;
@@ -415,7 +418,7 @@ public class TileMap extends RenderableObject {
      * @param tx Tile x coordinate
      * @param ty Tile y coordinate
      */
-    public void clearTileFlip(Enum<?> layerName, int tx, int ty) {
+    public void clearTileFlip(String layerName, int tx, int ty) {
         setTileFlip(layerName, tx, ty, false, false, false);
     }
 
@@ -426,7 +429,7 @@ public class TileMap extends RenderableObject {
      * @param ty Tile y coordinate
      * @return true if the tile has any flip properties, false otherwise
      */
-    public boolean hasTileFlip(Enum<?> layerName, int tx, int ty) {
+    public boolean hasTileFlip(String layerName, int tx, int ty) {
         return getTileFlipMask(layerName, tx, ty) != 0;
     }
 
